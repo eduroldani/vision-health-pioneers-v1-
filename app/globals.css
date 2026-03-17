@@ -1,0 +1,123 @@
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-border: rgba(58, 1, 116, 0.14);
+  --text-primary: #3a0174;
+  --text-secondary: #5f5f7a;
+  --button-background: #5365ff;
+  --button-background-hover: #4455e6;
+  --button-text: #ffffff;
+  --accent-soft: rgba(83, 101, 255, 0.08);
+  --accent-strong: rgba(58, 1, 116, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, var(--accent-strong), transparent 28%),
+    radial-gradient(circle at bottom right, var(--accent-soft), transparent 32%),
+    var(--background);
+}
+
+.hero-card {
+  width: min(100%, 760px);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 24px;
+  padding: 64px 72px;
+  text-align: center;
+  box-shadow:
+    0 24px 60px rgba(58, 1, 116, 0.08),
+    0 2px 8px rgba(58, 1, 116, 0.04);
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-card h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.hero-card p {
+  max-width: 520px;
+  margin: 20px auto 0;
+  color: var(--text-secondary);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.login-button {
+  margin-top: 34px;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 28px;
+  background: var(--button-background);
+  color: var(--button-text);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(83, 101, 255, 0.22);
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-button:hover {
+  background: var(--button-background-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(83, 101, 255, 0.26);
+}
+
+.login-button:focus-visible {
+  outline: 3px solid rgba(83, 101, 255, 0.22);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .hero-card {
+    padding: 36px 24px;
+  }
+}
