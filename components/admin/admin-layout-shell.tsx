@@ -79,8 +79,8 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
           </div>
 
           <div className="topbar-actions">
-            <Link href="/" className="secondary-button">
-              Homepage
+            <Link href="/admin" className="secondary-button">
+              Dashboard
             </Link>
             <button
               type="button"

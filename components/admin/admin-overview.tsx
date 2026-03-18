@@ -2,22 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { deriveStartupEvaluationStatus, fetchAssignments, isAssignmentOverdue } from "@/lib/supabase/assignments";
-import { fetchActiveStartups } from "@/lib/supabase/startups";
+import {
+  deriveStartupEvaluationStatus,
+  fetchAssignments,
+  isAssignmentOverdue,
+} from "@/lib/supabase/assignments";
+import { fetchActiveStartups, fetchStartupDetailById } from "@/lib/supabase/startups";
 import { fetchActiveProfiles } from "@/lib/supabase/profiles";
 import type { AssignmentRecord, ProfileRecord, StartupRecord } from "@/components/admin/types";
 
 type StartupDashboardRow = {
   startup: StartupRecord;
   evaluationStatus: string;
-  evaluatorCount: number;
-  submittedCount: number;
-  pendingCount: number;
+  startupMembersCount: number;
+  assignmentCount: number;
   overdueCount: number;
-  assignedProfiles: Array<{
-    id: string;
-    name: string;
-  }>;
 };
 
 const summaryCardLabels = [
@@ -32,7 +31,10 @@ const summaryCardLabels = [
 export function AdminOverview() {
   const [startups, setStartups] = useState<StartupRecord[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
-  const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
+  const [, setProfiles] = useState<ProfileRecord[]>([]);
+  const [startupMembersCountByStartupId, setStartupMembersCountByStartupId] = useState<
+    Record<string, number>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -48,6 +50,21 @@ export function AdminOverview() {
         setStartups(startupRows);
         setAssignments(assignmentRows);
         setProfiles(profileRows);
+
+        const startupDetails = await Promise.all(
+          startupRows.map(async (startup) => fetchStartupDetailById(startup.id)),
+        );
+
+        setStartupMembersCountByStartupId(
+          startupDetails.reduce<Record<string, number>>((accumulator, startupDetail) => {
+            accumulator[startupDetail.startup.id] = startupDetail.startupMembers.filter(
+              (member) =>
+                member.relationship_type === "founder" ||
+                member.relationship_type === "cofounder",
+            ).length;
+            return accumulator;
+          }, {}),
+        );
       } catch (error) {
         setErrorMessage(
           error instanceof Error ? error.message : "Unable to load the dashboard right now.",
@@ -60,13 +77,6 @@ export function AdminOverview() {
     void loadDashboard();
   }, []);
 
-  const profileNameById = useMemo(() => {
-    return profiles.reduce<Record<string, string>>((accumulator, profile) => {
-      accumulator[profile.id] = `${profile.first_name} ${profile.last_name}`.trim();
-      return accumulator;
-    }, {});
-  }, [profiles]);
-
   const startupRows = useMemo<StartupDashboardRow[]>(() => {
     return startups.map((startup) => {
       const startupAssignments = assignments.filter(
@@ -74,41 +84,30 @@ export function AdminOverview() {
           assignment.startup_id === startup.id && assignment.assignment_type === "evaluation",
       );
 
-      const submittedCount = startupAssignments.filter(
-        (assignment) => assignment.status === "submitted",
-      ).length;
-      const overdueAssignments = startupAssignments.filter(isAssignmentOverdue);
-      const assignedProfiles = startupAssignments
-        .map((assignment) => ({
-          id: assignment.profile_id,
-          name: profileNameById[assignment.profile_id] ?? "Unknown profile",
-        }))
-        .filter(
-          (value, index, array) =>
-            array.findIndex((candidate) => candidate.id === value.id) === index,
-        );
-
       return {
         startup,
         evaluationStatus: deriveStartupEvaluationStatus(startupAssignments),
-        evaluatorCount: startupAssignments.length,
-        submittedCount,
-        pendingCount: startupAssignments.length - submittedCount,
-        overdueCount: overdueAssignments.length,
-        assignedProfiles,
+        startupMembersCount: startupMembersCountByStartupId[startup.id] ?? 0,
+        assignmentCount: startupAssignments.length,
+        overdueCount: startupAssignments.filter(isAssignmentOverdue).length,
       };
     });
-  }, [assignments, profileNameById, startups]);
+  }, [assignments, startupMembersCountByStartupId, startups]);
 
   const summary = useMemo(() => {
-    const evaluations = assignments.filter((assignment) => assignment.assignment_type === "evaluation");
+    const evaluations = assignments.filter(
+      (assignment) => assignment.assignment_type === "evaluation",
+    );
 
     return {
       totalStartups: startups.length,
-      eligibilityPassed: startups.filter((startup) => startup.eligibility_status === "passed").length,
-      startupsAssigned: startupRows.filter((row) => row.evaluatorCount > 0).length,
-      inProgressEvaluations: evaluations.filter((assignment) => assignment.status === "in_progress").length,
-      completedEvaluations: evaluations.filter((assignment) => assignment.status === "submitted").length,
+      eligibilityPassed: startups.filter((startup) => startup.eligibility_status === "passed")
+        .length,
+      startupsAssigned: startupRows.filter((row) => row.assignmentCount > 0).length,
+      inProgressEvaluations: evaluations.filter((assignment) => assignment.status === "in_progress")
+        .length,
+      completedEvaluations: evaluations.filter((assignment) => assignment.status === "submitted")
+        .length,
       overdueEvaluations: evaluations.filter(isAssignmentOverdue).length,
     };
   }, [assignments, startupRows, startups]);
@@ -119,9 +118,7 @@ export function AdminOverview() {
         {summaryCardLabels.map((card) => (
           <article key={card.key} className="workspace-card summary-card">
             <span className="summary-label">{card.label}</span>
-            <strong className="summary-value">
-              {isLoading ? "..." : summary[card.key]}
-            </strong>
+            <strong className="summary-value">{isLoading ? "..." : summary[card.key]}</strong>
           </article>
         ))}
       </section>
@@ -132,9 +129,7 @@ export function AdminOverview() {
         <div className="card-heading page-heading">
           <div>
             <h2>Startup follow up</h2>
-            <p>
-              Review startup evaluation progress, follow up on pending work, and open each record quickly.
-            </p>
+            <p>Review startup evaluation progress and open each record quickly.</p>
           </div>
           <div className="record-actions">
             <Link href="/admin/startups" className="secondary-button">
@@ -153,15 +148,14 @@ export function AdminOverview() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Startup</th>
+                  <th>Startup name</th>
+                  <th>Cohort</th>
+                  <th>Program status</th>
                   <th>Eligibility</th>
                   <th>Evaluation</th>
-                  <th>Assigned</th>
-                  <th>Submitted</th>
-                  <th>Pending</th>
-                  <th>Overdue</th>
-                  <th>Cohort</th>
-                  <th>Action</th>
+                  <th>Team members number</th>
+                  <th>Assignments</th>
+                  <th>Overdue assignments</th>
                 </tr>
               </thead>
               <tbody>
@@ -172,37 +166,28 @@ export function AdminOverview() {
                         <Link href={`/admin/startups/${row.startup.id}`} className="record-title-link">
                           {row.startup.name}
                         </Link>
-                        <span className="table-subtext table-link-row">
-                          {row.assignedProfiles.length > 0
-                            ? row.assignedProfiles.map((profile, index) => (
-                                <span key={profile.id}>
-                                  {index > 0 ? ", " : ""}
-                                  <Link href={`/admin/profiles/${profile.id}`} className="relation-link">
-                                    {profile.name}
-                                  </Link>
-                                </span>
-                              ))
-                            : "No evaluators assigned yet"}
-                        </span>
+                        <span className="table-subtext">Open startup details</span>
                       </div>
                     </td>
-                    <td>{row.startup.eligibility_status}</td>
-                    <td>
-                      <span className="pill">{row.evaluationStatus}</span>
-                    </td>
-                    <td>{row.evaluatorCount}</td>
-                    <td>{row.submittedCount}</td>
-                    <td>{row.pendingCount}</td>
-                    <td>{row.overdueCount}</td>
                     <td>{row.startup.cohort ?? "No cohort"}</td>
                     <td>
-                      <Link
-                        href={`/admin/startups/${row.startup.id}`}
-                        className="secondary-button table-action-button"
-                      >
-                        Open
-                      </Link>
+                      <span className={getStatusBadgeClassName(row.startup.program_status)}>
+                        {formatStatusLabel(row.startup.program_status)}
+                      </span>
                     </td>
+                    <td>
+                      <span className={getStatusBadgeClassName(row.startup.eligibility_status)}>
+                        {formatStatusLabel(row.startup.eligibility_status)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={getStatusBadgeClassName(row.evaluationStatus)}>
+                        {formatStatusLabel(row.evaluationStatus)}
+                      </span>
+                    </td>
+                    <td>{row.startupMembersCount}</td>
+                    <td>{row.assignmentCount}</td>
+                    <td>{row.overdueCount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -212,4 +197,12 @@ export function AdminOverview() {
       </section>
     </div>
   );
+}
+
+function getStatusBadgeClassName(value: string) {
+  return `status-badge status-badge-${value.replaceAll("_", "-")}`;
+}
+
+function formatStatusLabel(value: string) {
+  return value.replaceAll("_", " ");
 }
