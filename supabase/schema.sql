@@ -24,6 +24,7 @@ create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
   last_name text not null,
+  gender text check (gender in ('male', 'female', 'diverse')),
   email text,
   linkedin_url text,
   website_url text,
@@ -40,6 +41,16 @@ create table if not exists public.roles (
   description text
 );
 
+create table if not exists public.users (
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text,
+  profile_id uuid references public.profiles (id) on delete set null,
+  is_admin boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  unique (profile_id)
+);
+
 create table if not exists public.profile_roles (
   id uuid primary key default gen_random_uuid(),
   role_id uuid not null references public.roles (id) on delete cascade,
@@ -50,13 +61,30 @@ create table if not exists public.profile_roles (
 
 insert into public.roles (name, description)
 values
-  ('admin', 'Full control over the internal system.'),
-  ('team_member', 'Internal team member with operational access.'),
-  ('founder', 'Founder profile role.'),
-  ('evaluator', 'Evaluator profile role.'),
-  ('mentor', 'Mentor profile role.'),
-  ('coach', 'Coach profile role.')
+  ('team_member', 'Internal team member supporting operations across the program.'),
+  ('founder', 'Founder involved in building and leading a startup.'),
+  ('evaluator', 'Evaluator reviewing startups and providing structured feedback.'),
+  ('mentor', 'Mentor advising founders with experience and strategic guidance.'),
+  ('coach', 'Coach supporting founders with hands-on development and accountability.')
 on conflict (name) do nothing;
+
+delete from public.profile_roles
+where role_id in (
+  select id from public.roles where name = 'admin'
+);
+
+delete from public.roles
+where name = 'admin';
+
+insert into public.users (id, email, is_admin)
+select id, email, true
+from auth.users
+on conflict (id) do update
+set email = excluded.email;
+
+alter table if exists public.users add column if not exists profile_id uuid references public.profiles (id) on delete set null;
+alter table if exists public.users drop constraint if exists users_profile_id_key;
+alter table if exists public.users add constraint users_profile_id_key unique (profile_id);
 
 alter table if exists public.startups add column if not exists notion_page_url text;
 alter table if exists public.startups add column if not exists website_url text;
@@ -72,12 +100,17 @@ alter table if exists public.startups add column if not exists updated_at timest
 alter table if exists public.profiles add column if not exists linkedin_url text;
 alter table if exists public.profiles add column if not exists first_name text;
 alter table if exists public.profiles add column if not exists last_name text;
+alter table if exists public.profiles add column if not exists gender text;
 alter table if exists public.profiles add column if not exists website_url text;
 alter table if exists public.profiles add column if not exists created_by_profile_id uuid;
 alter table if exists public.profiles add column if not exists updated_at timestamptz default timezone('utc', now());
 alter table if exists public.profiles add column if not exists record_status text default 'active';
 alter table if exists public.profiles drop column if exists role;
 alter table if exists public.profiles drop column if exists title;
+alter table if exists public.profiles drop constraint if exists profiles_gender_check;
+alter table if exists public.profiles
+  add constraint profiles_gender_check
+  check (gender is null or gender in ('male', 'female', 'diverse'));
 
 alter table if exists public.startup_people rename to startup_members;
 
@@ -135,6 +168,7 @@ alter table if exists public.assignments alter column record_status set not null
 alter table public.startups enable row level security;
 alter table public.profiles enable row level security;
 alter table public.roles enable row level security;
+alter table public.users enable row level security;
 alter table public.profile_roles enable row level security;
 alter table public.startup_members enable row level security;
 alter table public.assignments enable row level security;
@@ -176,26 +210,54 @@ to authenticated
 using (true);
 
 drop policy if exists "Authenticated users can insert profiles" on public.profiles;
-create policy "Authenticated users can insert profiles"
+create policy "Admins can insert profiles"
 on public.profiles
 for insert
 to authenticated
-with check (auth.uid() is not null);
+with check (
+  exists (
+    select 1
+    from public.users
+    where users.id = auth.uid()
+      and users.is_admin = true
+  )
+);
 
 drop policy if exists "Authenticated users can update profiles" on public.profiles;
-create policy "Authenticated users can update profiles"
+create policy "Admins or linked users can update profiles"
 on public.profiles
 for update
 to authenticated
-using (true)
-with check (auth.uid() is not null);
+using (
+  exists (
+    select 1
+    from public.users
+    where users.id = auth.uid()
+      and (users.is_admin = true or users.profile_id = profiles.id)
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.users
+    where users.id = auth.uid()
+      and (users.is_admin = true or users.profile_id = profiles.id)
+  )
+);
 
 drop policy if exists "Authenticated users can delete profiles" on public.profiles;
-create policy "Authenticated users can delete profiles"
+create policy "Admins can delete profiles"
 on public.profiles
 for delete
 to authenticated
-using (true);
+using (
+  exists (
+    select 1
+    from public.users
+    where users.id = auth.uid()
+      and users.is_admin = true
+  )
+);
 
 drop policy if exists "Authenticated users can read roles" on public.roles;
 create policy "Authenticated users can read roles"
@@ -203,6 +265,20 @@ on public.roles
 for select
 to authenticated
 using (true);
+
+drop policy if exists "Authenticated users can read own user record" on public.users;
+create policy "Authenticated users can read own user record"
+on public.users
+for select
+to authenticated
+using (auth.uid() = id);
+
+drop policy if exists "Authenticated users can create own user record" on public.users;
+create policy "Authenticated users can create own user record"
+on public.users
+for insert
+to authenticated
+with check (auth.uid() = id and is_admin = false);
 
 drop policy if exists "Authenticated users can insert roles" on public.roles;
 create policy "Authenticated users can insert roles"

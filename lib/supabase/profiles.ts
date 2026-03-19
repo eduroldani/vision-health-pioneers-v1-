@@ -8,9 +8,12 @@ import type {
   StartupRecord,
 } from "@/components/admin/types";
 
+const excludedProfileRoleNames = new Set(["admin"]);
+
 export type ProfileFormValues = {
   first_name: string;
   last_name: string;
+  gender: "" | "male" | "female" | "diverse";
   email: string;
   linkedin_url: string;
   website_url: string;
@@ -20,6 +23,7 @@ export type ProfileFormValues = {
 export const defaultProfileFormValues: ProfileFormValues = {
   first_name: "",
   last_name: "",
+  gender: "",
   email: "",
   linkedin_url: "",
   website_url: "",
@@ -30,6 +34,7 @@ const profileSelectFields = [
   "id",
   "first_name",
   "last_name",
+  "gender",
   "email",
   "linkedin_url",
   "website_url",
@@ -109,7 +114,12 @@ export async function fetchProfileById(profileId: string) {
 
   const [{ data: profileData, error: profileError }, { data: profileRoleData, error: profileRoleError }, { data: startupMemberData, error: startupMemberError }, { data: assignmentData, error: assignmentError }, { data: startupData, error: startupError }] =
     await Promise.all([
-      supabase.from("profiles").select(profileSelectFields).eq("id", profileId).single(),
+      supabase
+        .from("profiles")
+        .select(profileSelectFields)
+        .eq("id", profileId)
+        .eq("record_status", "active")
+        .single(),
       supabase
         .from("profile_roles")
         .select("id, role_id, profile_id, created_at, roles(id, name, description)")
@@ -158,7 +168,7 @@ export async function fetchRoles() {
     throw new Error(error.message);
   }
 
-  return (data as RoleRecord[]) ?? [];
+  return ((data as RoleRecord[]) ?? []).filter((role) => !excludedProfileRoleNames.has(role.name));
 }
 
 export async function fetchRolesForProfile(profileId: string) {
@@ -213,6 +223,7 @@ export async function createProfile(values: ProfileFormValues) {
   const { error } = await supabase.from("profiles").insert({
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
+    gender: values.gender || null,
     email: values.email.trim() || null,
     linkedin_url: values.linkedin_url.trim() || null,
     website_url: values.website_url.trim() || null,
@@ -233,6 +244,7 @@ export async function updateProfile(profileId: string, values: ProfileFormValues
     .update({
       first_name: values.first_name.trim(),
       last_name: values.last_name.trim(),
+      gender: values.gender || null,
       email: values.email.trim() || null,
       linkedin_url: values.linkedin_url.trim() || null,
       website_url: values.website_url.trim() || null,
@@ -243,6 +255,47 @@ export async function updateProfile(profileId: string, values: ProfileFormValues
 
   if (error) {
     throw new Error(error.message);
+  }
+}
+
+export async function deleteProfile(profileId: string) {
+  const supabase = createBrowserSupabaseClient();
+  const timestamp = new Date().toISOString();
+
+  const [{ error: profileError }, { error: startupMembersError }, { error: assignmentsError }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("id", profileId),
+      supabase
+        .from("startup_members")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("profile_id", profileId)
+        .eq("record_status", "active"),
+      supabase
+        .from("assignments")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("profile_id", profileId)
+        .eq("record_status", "active"),
+    ]);
+
+  if (profileError || startupMembersError || assignmentsError) {
+    throw new Error(
+      profileError?.message ??
+        startupMembersError?.message ??
+        assignmentsError?.message ??
+        "Unable to delete the profile.",
+    );
   }
 }
 
@@ -257,5 +310,7 @@ function normalizeProfileRoles(data: unknown) {
     role: Array.isArray(profileRole.roles)
       ? (profileRole.roles[0] ?? null)
       : (profileRole.roles ?? null),
-  })) as ProfileRoleRecord[]);
+  })) as ProfileRoleRecord[]).filter(
+    (profileRole) => !profileRole.role?.name || !excludedProfileRoleNames.has(profileRole.role.name),
+  );
 }

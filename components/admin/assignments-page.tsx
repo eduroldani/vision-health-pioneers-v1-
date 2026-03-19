@@ -26,6 +26,7 @@ export function AssignmentsPage() {
   const [startups, setStartups] = useState<StartupRecord[]>([]);
   const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
+  const [sortBy, setSortBy] = useState("created_newest");
   const [formValues, setFormValues] = useState<AssignmentFormValues>(defaultAssignmentFormValues);
   const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,6 +51,31 @@ export function AssignmentsPage() {
       }, {}),
     [profiles],
   );
+
+  const sortedAssignments = useMemo(() => {
+    const nextAssignments = [...assignments];
+
+    nextAssignments.sort((left, right) => {
+      const leftLabel = `${profileNameById[left.profile_id] ?? ""} ${startupNameById[left.startup_id] ?? ""}`.trim();
+      const rightLabel = `${profileNameById[right.profile_id] ?? ""} ${startupNameById[right.startup_id] ?? ""}`.trim();
+
+      if (sortBy === "name_asc") {
+        return leftLabel.localeCompare(rightLabel);
+      }
+
+      if (sortBy === "name_desc") {
+        return rightLabel.localeCompare(leftLabel);
+      }
+
+      if (sortBy === "created_oldest") {
+        return new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+      }
+
+      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+    });
+
+    return nextAssignments;
+  }, [assignments, profileNameById, sortBy, startupNameById]);
 
   async function loadPageData() {
     setIsLoading(true);
@@ -139,7 +165,16 @@ export function AssignmentsPage() {
             <h2>Assignments</h2>
             <p>Clear follow up for evaluations only.</p>
           </div>
-          <div className="record-actions">
+          <div className="page-controls">
+            <label className="toolbar-select">
+              <span>Sort by</span>
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                <option value="name_asc">Name A-Z</option>
+                <option value="name_desc">Name Z-A</option>
+                <option value="created_newest">Created date: newest</option>
+                <option value="created_oldest">Created date: oldest</option>
+              </select>
+            </label>
             <button
               type="button"
               className="login-button admin-button"
@@ -160,21 +195,47 @@ export function AssignmentsPage() {
         </div>
 
         <div className="records-list">
-          {!isLoading && assignments.length === 0 ? (
+          {!isLoading && sortedAssignments.length === 0 ? (
             <div className="empty-state">No assignments created yet.</div>
           ) : null}
 
-          {assignments.map((assignment) => (
+          {sortedAssignments.map((assignment) => (
             <article key={assignment.id} className="record-card">
-              <div className="assignment-line">
-                <span className="assignment-prefix">Evaluation from</span>
-                <Link href={`/admin/profiles/${assignment.profile_id}`} className="relation-link">
-                  {profileNameById[assignment.profile_id] ?? "Unknown profile"}
-                </Link>
-                <span className="assignment-prefix">to</span>
-                <Link href={`/admin/startups/${assignment.startup_id}`} className="relation-link">
-                  {startupNameById[assignment.startup_id] ?? "Unknown startup"}
-                </Link>
+              <div className="record-topline">
+                <div className="assignment-line">
+                  <span className="assignment-entity">
+                    <span className="assignment-entity-icon" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 2c-3.27 0-6 1.92-6 4.3 0 .39.31.7.7.7h10.6a.7.7 0 0 0 .7-.7C16 13.92 13.27 12 10 12Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
+                    <Link href={`/admin/profiles/${assignment.profile_id}`} className="relation-link">
+                      {profileNameById[assignment.profile_id] ?? "Unknown profile"}
+                    </Link>
+                  </span>
+                  <span className="assignment-connector" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M4 10h12m-4-4 4 4-4 4"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="assignment-entity">
+                    <Link href={`/admin/startups/${assignment.startup_id}`} className="relation-link">
+                      {startupNameById[assignment.startup_id] ?? "Unknown startup"}
+                    </Link>
+                  </span>
+                </div>
+                <span className="assignment-type-badge">
+                  {assignment.assignment_type}
+                </span>
               </div>
 
               <div className="record-meta">
@@ -191,6 +252,12 @@ export function AssignmentsPage() {
               </div>
 
               <div className="record-actions">
+                <Link
+                  href={`/admin/assignments/${assignment.id}`}
+                  className="secondary-button inline-button"
+                >
+                  View details
+                </Link>
                 <button
                   type="button"
                   className="secondary-button inline-button"

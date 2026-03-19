@@ -139,6 +139,7 @@ export async function fetchAssignmentById(assignmentId: string) {
     .from("assignments")
     .select(assignmentSelectFields)
     .eq("id", assignmentId)
+    .eq("record_status", "active")
     .single();
 
   if (error) {

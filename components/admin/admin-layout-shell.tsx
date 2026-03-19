@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { useAdminSession } from "@/components/admin/use-admin-session";
 
@@ -14,6 +14,7 @@ const primaryNavigationItems = [
   { href: "/admin/startups", label: "Startups" },
   { href: "/admin/profiles", label: "Profiles" },
   { href: "/admin/assignments", label: "Assignments" },
+  { href: "/admin/search", label: "Search" },
 ];
 
 const quickActionItems = [
@@ -25,9 +26,15 @@ const quickActionItems = [
 export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { sessionState, userEmail, sessionError } = useAdminSession();
+  const searchParams = useSearchParams();
+  const { sessionState, userEmail, isAdmin, sessionError } = useAdminSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState(searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    setSearchValue(searchParams.get("q") ?? "");
+  }, [searchParams]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -52,6 +59,11 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
     }
   }
 
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(`/admin/search?q=${encodeURIComponent(searchValue.trim())}`);
+  }
+
   if (sessionState === "loading") {
     return (
       <main className="page-shell">
@@ -68,6 +80,28 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
     return null;
   }
 
+  if (sessionState === "unauthorized") {
+    return (
+      <main className="page-shell">
+        <section className="admin-card">
+          <span className="eyebrow">Internal System</span>
+          <h1>Admin access required</h1>
+          <p>Only users marked as admins can open this workspace.</p>
+          {sessionError ? <p className="form-message form-message-error">{sessionError}</p> : null}
+          <div className="admin-actions">
+            <Link href="/" className="secondary-button">
+              Back to home
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <main className="page-shell page-shell-admin">
       <div className="workspace-shell">
@@ -78,18 +112,28 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
             <p>Manage startups and profiles in a simple internal workspace.</p>
           </div>
 
-          <div className="topbar-actions">
-            <Link href="/admin" className="secondary-button">
-              Dashboard
-            </Link>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? "Signing out..." : "Log out"}
-            </button>
+          <div className="topbar-controls">
+            <div className="topbar-actions">
+              <Link href="/profile" className="secondary-button">
+                My profile
+              </Link>
+              <Link href="/admin" className="secondary-button">
+                Dashboard
+              </Link>
+            </div>
+
+            <form className="topbar-search-form" onSubmit={handleSearchSubmit}>
+              <input
+                type="search"
+                className="topbar-search-input"
+                placeholder="Global search"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+              />
+              <button type="submit" className="secondary-button">
+                Search
+              </button>
+            </form>
           </div>
         </header>
 
@@ -130,6 +174,14 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
             <div className="session-box sidebar-user-box">
               <strong>Signed in as</strong>
               <span>{userEmail}</span>
+              <button
+                type="button"
+                className="secondary-button sidebar-logout-button"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? "Signing out..." : "Log out"}
+              </button>
             </div>
           </aside>
 

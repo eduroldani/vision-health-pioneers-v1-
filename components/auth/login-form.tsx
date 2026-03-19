@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { ensureCurrentAppUser } from "@/lib/supabase/users";
 
 type LoginFormProps = {
   isSupabaseConfigured: boolean;
@@ -33,7 +34,7 @@ export function LoginForm({ isSupabaseConfigured }: LoginFormProps) {
 
     try {
       const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -43,8 +44,17 @@ export function LoginForm({ isSupabaseConfigured }: LoginFormProps) {
         return;
       }
 
+      const authUser = data.user;
+
+      if (!authUser) {
+        setErrorMessage("Login succeeded, but the user session could not be loaded.");
+        return;
+      }
+
+      const appUser = await ensureCurrentAppUser(supabase, authUser.id, authUser.email ?? null);
+
       setMessage("Login successful. Redirecting...");
-      router.push("/admin");
+      router.push(appUser.is_admin ? "/admin" : "/profile");
       router.refresh();
     } catch (error) {
       setErrorMessage(

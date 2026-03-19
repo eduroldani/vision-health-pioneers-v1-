@@ -20,6 +20,7 @@ export type ProfileRecord = {
   id: string;
   first_name: string;
   last_name: string;
+  gender: "male" | "female" | "diverse" | null;
   email: string | null;
   linkedin_url: string | null;
   website_url: string | null;

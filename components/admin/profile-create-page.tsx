@@ -38,8 +38,8 @@ export function ProfileCreatePage() {
             <span>Save the basic person information here.</span>
           </div>
           <div className="detail-item">
-            <strong>2. Assign global roles</strong>
-            <span>After saving, open the profile and choose roles like founder, evaluator, or mentor.</span>
+            <strong>2. Assign profile roles</strong>
+            <span>After saving, open the profile and choose roles like Founder, Evaluator, Coach, or Mentor.</span>
           </div>
           <div className="detail-item">
             <strong>3. Link to startups</strong>
@@ -53,7 +53,7 @@ export function ProfileCreatePage() {
         submitLabel="Create profile"
         submittingLabel="Creating profile..."
         title="Profile details"
-        description="Only basic information here. Roles come after the profile is created."
+        description="Only the basic information goes here. Profile roles can be added after the profile is created."
       />
     </div>
   );

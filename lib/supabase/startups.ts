@@ -1,5 +1,6 @@
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type {
+  AssignmentRecord,
   ProfileRecord,
   ProfileRoleRecord,
   StartupMemberRecord,
@@ -79,6 +80,66 @@ export async function fetchActiveStartups() {
   return (data as StartupRecord[]) ?? [];
 }
 
+export async function fetchStartupsOverview() {
+  const supabase = createBrowserSupabaseClient();
+
+  const [
+    { data: startupData, error: startupError },
+    { data: memberData, error: memberError },
+    { data: assignmentData, error: assignmentError },
+  ] = await Promise.all([
+    supabase
+      .from("startups")
+      .select(startupSelectFields)
+      .eq("record_status", "active")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("startup_members")
+      .select(
+        "id, startup_id, profile_id, relationship_type, notes, created_at, updated_at, record_status, profiles(id, first_name, last_name, gender, email, linkedin_url, website_url)",
+      )
+      .eq("record_status", "active"),
+    supabase
+      .from("assignments")
+      .select(
+        "id, startup_id, profile_id, assignment_type, status, due_date, submitted_at, assigned_by_profile_id, notes, score, recommendation, form_url, created_at, updated_at, record_status",
+      )
+      .eq("record_status", "active")
+      .eq("assignment_type", "evaluation"),
+  ]);
+
+  if (startupError || memberError || assignmentError) {
+    throw new Error(
+      startupError?.message ??
+        memberError?.message ??
+        assignmentError?.message ??
+        "Unable to load startups right now.",
+    );
+  }
+
+  const startupMembers = ((memberData as Array<
+    StartupMemberRecord & {
+      profiles?: StartupMemberWithProfileRecord["profile"] | StartupMemberWithProfileRecord["profile"][];
+    }
+  >) ?? []).map((member) => ({
+    id: member.id,
+    startup_id: member.startup_id,
+    profile_id: member.profile_id,
+    relationship_type: member.relationship_type,
+    notes: member.notes,
+    created_at: member.created_at,
+    updated_at: member.updated_at,
+    record_status: member.record_status,
+    profile: Array.isArray(member.profiles) ? (member.profiles[0] ?? null) : (member.profiles ?? null),
+  }));
+
+  return {
+    startups: (startupData as StartupRecord[]) ?? [],
+    startupMembers,
+    assignments: (assignmentData as AssignmentRecord[]) ?? [],
+  };
+}
+
 export async function fetchStartupById(startupId: string) {
   const supabase = createBrowserSupabaseClient();
 
@@ -86,6 +147,7 @@ export async function fetchStartupById(startupId: string) {
     .from("startups")
     .select(startupSelectFields)
     .eq("id", startupId)
+    .eq("record_status", "active")
     .single();
 
   if (error) {
@@ -108,11 +170,12 @@ export async function fetchStartupDetailById(startupId: string) {
       .from("startups")
       .select(startupSelectFields)
       .eq("id", startupId)
+      .eq("record_status", "active")
       .single(),
     supabase
       .from("startup_members")
       .select(
-        "id, startup_id, profile_id, relationship_type, notes, created_at, updated_at, record_status, profiles(id, first_name, last_name, email, linkedin_url, website_url)",
+        "id, startup_id, profile_id, relationship_type, notes, created_at, updated_at, record_status, profiles(id, first_name, last_name, gender, email, linkedin_url, website_url)",
       )
       .eq("startup_id", startupId)
       .eq("record_status", "active")
@@ -268,5 +331,46 @@ export async function archiveStartupMember(startupMemberId: string) {
 
   if (error) {
     throw new Error(error.message);
+  }
+}
+
+export async function deleteStartup(startupId: string) {
+  const supabase = createBrowserSupabaseClient();
+  const timestamp = new Date().toISOString();
+
+  const [{ error: startupError }, { error: startupMembersError }, { error: assignmentsError }] =
+    await Promise.all([
+      supabase
+        .from("startups")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("id", startupId),
+      supabase
+        .from("startup_members")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("startup_id", startupId)
+        .eq("record_status", "active"),
+      supabase
+        .from("assignments")
+        .update({
+          record_status: "deleted",
+          updated_at: timestamp,
+        })
+        .eq("startup_id", startupId)
+        .eq("record_status", "active"),
+    ]);
+
+  if (startupError || startupMembersError || assignmentsError) {
+    throw new Error(
+      startupError?.message ??
+        startupMembersError?.message ??
+        assignmentsError?.message ??
+        "Unable to delete the startup.",
+    );
   }
 }

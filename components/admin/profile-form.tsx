@@ -80,6 +80,24 @@ export function ProfileForm({
         </div>
 
         <label className="field">
+          <span>Gender</span>
+          <select
+            value={values.gender}
+            onChange={(event) =>
+              setValues((current) => ({
+                ...current,
+                gender: event.target.value as ProfileFormValues["gender"],
+              }))
+            }
+          >
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="diverse">Diverse</option>
+          </select>
+        </label>
+
+        <label className="field">
           <span>Email</span>
           <input
             type="email"

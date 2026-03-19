@@ -27,6 +27,7 @@ export function ProfileEditPage({ profileId }: ProfileEditPageProps) {
         setInitialValues({
           first_name: profile.first_name,
           last_name: profile.last_name,
+          gender: profile.gender ?? "",
           email: profile.email ?? "",
           linkedin_url: profile.linkedin_url ?? "",
           website_url: profile.website_url ?? "",

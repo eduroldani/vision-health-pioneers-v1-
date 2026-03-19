@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { fetchProfileById, fetchRoles, updateProfileRoles } from "@/lib/supabase/profiles";
+import { useRouter } from "next/navigation";
+import { deleteProfile, fetchProfileById, fetchRoles, updateProfileRoles } from "@/lib/supabase/profiles";
 import {
   AssignmentRecord,
   ProfileRecord,
@@ -18,6 +19,7 @@ type ProfileDetailPageProps = {
 };
 
 export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [profileRoles, setProfileRoles] = useState<ProfileRoleRecord[]>([]);
   const [availableRoles, setAvailableRoles] = useState<RoleRecord[]>([]);
@@ -27,6 +29,7 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingRoles, setIsSavingRoles] = useState(false);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -36,6 +39,13 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
       return accumulator;
     }, {});
   }, [startups]);
+
+  function formatRoleName(roleName: string) {
+    return roleName
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
 
   useEffect(() => {
     async function loadProfile() {
@@ -70,19 +80,40 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
       const refreshedProfileRoles = await fetchProfileById(profileId);
       setProfileRoles(refreshedProfileRoles.profileRoles);
       setSelectedRoleIds(refreshedProfileRoles.profileRoles.map((profileRole) => profileRole.role_id));
-      setSuccessMessage("Global roles updated.");
+      setSuccessMessage("Profile roles updated.");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Unable to update the global roles.",
+        error instanceof Error ? error.message : "Unable to update the profile roles.",
       );
     } finally {
       setIsSavingRoles(false);
     }
   }
 
+  async function handleDeleteProfile() {
+    if (!window.confirm("Delete this profile? It will be hidden from the system.")) {
+      return;
+    }
+
+    setIsDeletingProfile(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteProfile(profileId);
+      router.push("/admin/profiles");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to delete the profile.",
+      );
+      setIsDeletingProfile(false);
+    }
+  }
+
   return (
     <section className="workspace-card page-card">
-      <div className="card-heading page-heading">
+        <div className="card-heading page-heading">
         <div>
           <h2>
             {isLoading
@@ -91,17 +122,27 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
           </h2>
           <p>Review the profile information and related records.</p>
         </div>
-        <div className="record-actions">
-          <Link href="/admin/profiles" className="secondary-button">
-            Back to profiles
-          </Link>
-          {profile ? (
-            <Link href={`/admin/profiles/${profile.id}/edit`} className="secondary-button">
-              Edit profile
+          <div className="record-actions">
+            <Link href="/admin/profiles" className="secondary-button">
+              Back to profiles
             </Link>
-          ) : null}
+            {profile ? (
+              <Link href={`/admin/profiles/${profile.id}/edit`} className="secondary-button">
+                Edit profile
+              </Link>
+            ) : null}
+            {profile ? (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleDeleteProfile}
+                disabled={isDeletingProfile}
+              >
+                {isDeletingProfile ? "Deleting..." : "Delete profile"}
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
 
       {successMessage ? <p className="form-message form-message-success">{successMessage}</p> : null}
       {errorMessage ? <p className="form-message form-message-error">{errorMessage}</p> : null}
@@ -109,6 +150,14 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
       {profile ? (
         <div className="detail-stack">
           <div className="detail-grid">
+            <div className="detail-item">
+              <strong>Gender</strong>
+              <span>
+                {profile.gender
+                  ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)
+                  : "Not set"}
+              </span>
+            </div>
             <div className="detail-item">
               <strong>Email</strong>
               <span>{profile.email ?? "No email"}</span>
@@ -138,10 +187,10 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
           ) : null}
 
           <div className="detail-panel">
-            <strong>Global roles</strong>
+            <strong>Profile roles</strong>
             <p>
-              These are system-wide roles for the person, like founder, evaluator, mentor, or
-              team_member. They are different from startup relations.
+              These describe the person&apos;s general contribution across the network, like Coach,
+              Evaluator, Mentor, or Founder. They are different from startup-specific relations.
             </p>
             <div className="checkbox-stack">
               {availableRoles.map((role) => (
@@ -158,7 +207,7 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
                     }
                   />
                   <div className="checkbox-copy">
-                    <strong>{role.name}</strong>
+                    <strong>{formatRoleName(role.name)}</strong>
                     <span>{role.description ?? "No description"}</span>
                   </div>
                 </label>
@@ -170,12 +219,12 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
                 profileRoles.map((profileRole) =>
                   profileRole.role ? (
                     <span key={profileRole.id} className="pill">
-                      {profileRole.role.name}
+                      {formatRoleName(profileRole.role.name)}
                     </span>
                   ) : null,
                 )
               ) : (
-                <span className="role-placeholder">No global roles assigned yet.</span>
+                <span className="role-placeholder">No profile roles assigned yet.</span>
               )}
             </div>
 
@@ -186,7 +235,7 @@ export function ProfileDetailPage({ profileId }: ProfileDetailPageProps) {
                 onClick={handleSaveRoles}
                 disabled={isSavingRoles}
               >
-                {isSavingRoles ? "Saving roles..." : "Save roles"}
+                {isSavingRoles ? "Saving roles..." : "Save profile roles"}
               </button>
             </div>
           </div>

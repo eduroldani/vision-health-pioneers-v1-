@@ -2,10 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   addStartupMember,
   archiveStartupMember,
   defaultStartupMemberFormValues,
+  deleteStartup,
   fetchStartupDetailById,
   type StartupMemberFormValues,
 } from "@/lib/supabase/startups";
@@ -36,6 +38,7 @@ type StartupDetailPageProps = {
 };
 
 export function StartupDetailPage({ startupId }: StartupDetailPageProps) {
+  const router = useRouter();
   const { userEmail, userId } = useAdminSession();
   const [startup, setStartup] = useState<StartupRecord | null>(null);
   const [startupMembers, setStartupMembers] = useState<StartupMemberWithProfileRecord[]>([]);
@@ -55,6 +58,7 @@ export function StartupDetailPage({ startupId }: StartupDetailPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAssignmentSubmitting, setIsAssignmentSubmitting] = useState(false);
+  const [isDeletingStartup, setIsDeletingStartup] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -262,6 +266,27 @@ export function StartupDetailPage({ startupId }: StartupDetailPageProps) {
     return `status-badge status-badge-${value.replaceAll("_", "-")}`;
   }
 
+  async function handleDeleteStartup() {
+    if (!window.confirm("Delete this startup? It will be hidden from the system.")) {
+      return;
+    }
+
+    setIsDeletingStartup(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteStartup(startupId);
+      router.push("/admin/startups");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to delete the startup.",
+      );
+      setIsDeletingStartup(false);
+    }
+  }
+
   return (
     <div className="page-stack">
       <section className="workspace-card page-card">
@@ -278,6 +303,16 @@ export function StartupDetailPage({ startupId }: StartupDetailPageProps) {
               <Link href={`/admin/startups/${startup.id}/edit`} className="secondary-button">
                 Edit startup
               </Link>
+            ) : null}
+            {startup ? (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleDeleteStartup}
+                disabled={isDeletingStartup}
+              >
+                {isDeletingStartup ? "Deleting..." : "Delete startup"}
+              </button>
             ) : null}
           </div>
         </div>
