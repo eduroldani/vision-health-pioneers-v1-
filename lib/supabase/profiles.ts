@@ -58,7 +58,7 @@ export async function fetchActiveProfiles() {
     throw new Error(error.message);
   }
 
-  return (data as ProfileRecord[]) ?? [];
+  return ((data as unknown) as ProfileRecord[]) ?? [];
 }
 
 export async function fetchProfilesOverview() {
@@ -102,7 +102,7 @@ export async function fetchProfilesOverview() {
   }
 
   return {
-    profiles: (profileData as ProfileRecord[]) ?? [],
+    profiles: ((profileData as unknown) as ProfileRecord[]) ?? [],
     profileRoles: normalizeProfileRoles(profileRoleData),
     startupMembers: (startupMemberData as StartupMemberRecord[]) ?? [],
     assignments: (assignmentData as AssignmentRecord[]) ?? [],
@@ -151,7 +151,7 @@ export async function fetchProfileById(profileId: string) {
   }
 
   return {
-    profile: profileData as ProfileRecord,
+    profile: (profileData as unknown) as ProfileRecord,
     profileRoles: normalizeProfileRoles(profileRoleData),
     startupMembers: (startupMemberData as StartupMemberRecord[]) ?? [],
     assignments: (assignmentData as AssignmentRecord[]) ?? [],

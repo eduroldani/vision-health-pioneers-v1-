@@ -77,7 +77,7 @@ export async function fetchActiveStartups() {
     throw new Error(error.message);
   }
 
-  return (data as StartupRecord[]) ?? [];
+  return ((data as unknown) as StartupRecord[]) ?? [];
 }
 
 export async function fetchStartupsOverview() {
@@ -134,9 +134,9 @@ export async function fetchStartupsOverview() {
   }));
 
   return {
-    startups: (startupData as StartupRecord[]) ?? [],
+    startups: ((startupData as unknown) as StartupRecord[]) ?? [],
     startupMembers,
-    assignments: (assignmentData as AssignmentRecord[]) ?? [],
+    assignments: ((assignmentData as unknown) as AssignmentRecord[]) ?? [],
   };
 }
 
@@ -154,7 +154,7 @@ export async function fetchStartupById(startupId: string) {
     throw new Error(error.message);
   }
 
-  return data as StartupRecord;
+  return (data as unknown) as StartupRecord;
 }
 
 export async function fetchStartupDetailById(startupId: string) {
@@ -215,7 +215,7 @@ export async function fetchStartupDetailById(startupId: string) {
   }));
 
   return {
-    startup: startupData as StartupRecord,
+    startup: (startupData as unknown) as StartupRecord,
     startupMembers,
     profiles: (profileData as ProfileRecord[]) ?? [],
     profileRoles: (((profileRoleData as Array<

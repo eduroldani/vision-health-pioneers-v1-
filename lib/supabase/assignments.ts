@@ -123,7 +123,7 @@ export async function fetchAssignments(filters: Partial<AssignmentFilters> = {})
     throw new Error(error.message);
   }
 
-  const assignments = (data as AssignmentRecord[]) ?? [];
+  const assignments = ((data as unknown) as AssignmentRecord[]) ?? [];
 
   if (filters.overdue_only) {
     return assignments.filter(isAssignmentOverdue);
@@ -146,7 +146,7 @@ export async function fetchAssignmentById(assignmentId: string) {
     throw new Error(error.message);
   }
 
-  return data as AssignmentRecord;
+  return (data as unknown) as AssignmentRecord;
 }
 
 export async function createAssignment(values: AssignmentFormValues) {
