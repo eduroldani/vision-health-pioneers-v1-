@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { useAdminSession } from "@/components/admin/use-admin-session";
 
@@ -26,15 +26,19 @@ const quickActionItems = [
 export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { sessionState, userEmail, isAdmin, sessionError } = useAdminSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const [searchValue, setSearchValue] = useState(searchParams.get("q") ?? "");
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
-    setSearchValue(searchParams.get("q") ?? "");
-  }, [searchParams]);
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const currentSearchParams = new URLSearchParams(window.location.search);
+    setSearchValue(currentSearchParams.get("q") ?? "");
+  }, [pathname]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
