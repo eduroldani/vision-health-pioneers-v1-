@@ -26,9 +26,11 @@ type StartupDashboardRow = {
 const summaryCardLabels = [
   { key: "totalStartups", label: "Number of startups" },
   { key: "totalFounders", label: "Number of founders" },
-  { key: "founderDistribution", label: "Founder gender distribution" },
+  { key: "totalCoaches", label: "Number of coaches" },
+  { key: "totalMentors", label: "Number of mentors" },
   { key: "totalAssignments", label: "Number of assignments" },
   { key: "overdueAssignments", label: "Overdue assignments" },
+  { key: "founderDistribution", label: "Founder gender distribution" },
 ] as const;
 
 export function AdminOverview() {
@@ -117,14 +119,28 @@ export function AdminOverview() {
       )
       .filter(Boolean);
 
+    const coachProfileIds = new Set(
+      startupMembers
+        .filter((member) => member.relationship_type === "coach")
+        .map((member) => member.profile_id),
+    );
+
+    const mentorProfileIds = new Set(
+      startupMembers
+        .filter((member) => member.relationship_type === "mentor")
+        .map((member) => member.profile_id),
+    );
+
     return {
       totalStartups: startups.length,
       totalFounders: founders.length,
+      totalCoaches: coachProfileIds.size,
+      totalMentors: mentorProfileIds.size,
+      totalAssignments: evaluationAssignments.length,
+      overdueAssignments: evaluationAssignments.filter(isAssignmentOverdue).length,
       femaleFounders: founders.filter((profile) => profile?.gender === "female").length,
       maleFounders: founders.filter((profile) => profile?.gender === "male").length,
       diverseFounders: founders.filter((profile) => profile?.gender === "diverse").length,
-      totalAssignments: evaluationAssignments.length,
-      overdueAssignments: evaluationAssignments.filter(isAssignmentOverdue).length,
     };
   }, [assignments, startupMembers, startups]);
 
@@ -180,6 +196,8 @@ export function AdminOverview() {
   const summaryFooters = {
     totalStartups: `${startupRows.filter((row) => row.assignmentCount > 0).length} with assignments`,
     totalFounders: founderDistributionLabel,
+    totalCoaches: "Across active startup teams",
+    totalMentors: "Across active startup teams",
     totalAssignments: `${assignments.filter((assignment) => assignment.status === "submitted").length} completed`,
     overdueAssignments: `${assignments.filter((assignment) => assignment.status === "in_progress").length} in progress`,
   };
@@ -188,7 +206,12 @@ export function AdminOverview() {
     <div className="page-stack">
       <section className="workspace-grid workspace-grid-overview">
         {summaryCardLabels.map((card) => (
-          <article key={card.key} className="workspace-card summary-card">
+          <article
+            key={card.key}
+            className={`workspace-card summary-card ${
+              card.key === "founderDistribution" ? "summary-card-feature" : ""
+            }`}
+          >
             <span className="summary-label">{card.label}</span>
             {card.key === "founderDistribution" ? (
               !isLoading ? (

@@ -16,6 +16,54 @@ export type StartupRecord = {
   updated_at: string;
 };
 
+export type CohortRecord = {
+  id: string;
+  number: number | null;
+  name: string;
+  program_name: string | null;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  record_status: string;
+};
+
+export type ModuleTemplateRecord = {
+  id: string;
+  name: string;
+  description: string | null;
+  module_type: string | null;
+  default_notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  record_status: string;
+};
+
+export type CohortModuleRecord = {
+  id: string;
+  cohort_id: string;
+  module_template_id: string;
+  status: string;
+  sequence_number: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  record_status: string;
+};
+
+export type CohortModuleWithRelationsRecord = CohortModuleRecord & {
+  cohort: Pick<CohortRecord, "id" | "name" | "program_name" | "status"> | null;
+  module_template: Pick<ModuleTemplateRecord, "id" | "name" | "module_type"> | null;
+};
+
 export type ProfileRecord = {
   id: string;
   first_name: string;
@@ -109,3 +157,13 @@ export const startupMemberRelationshipOptions = [
   "mentor",
   "coach",
 ];
+
+export const cohortStatusOptions = ["planned", "active", "completed", "archived"];
+export const moduleTemplateTypeOptions = [
+  "coaching",
+  "mentoring",
+  "workshop",
+  "expert_session",
+  "operations",
+];
+export const cohortModuleStatusOptions = ["planned", "active", "completed", "cancelled"];

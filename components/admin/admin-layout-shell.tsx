@@ -11,6 +11,7 @@ type AdminLayoutShellProps = {
 };
 
 const primaryNavigationItems = [
+  { href: "/admin/program-management", label: "Program" },
   { href: "/admin/startups", label: "Startups" },
   { href: "/admin/profiles", label: "Profiles" },
   { href: "/admin/assignments", label: "Assignments" },
@@ -118,6 +119,9 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
 
           <div className="topbar-controls">
             <div className="topbar-actions">
+              <Link href="/admin/program-management" className="secondary-button">
+                Program management
+              </Link>
               <Link href="/profile" className="secondary-button">
                 My profile
               </Link>

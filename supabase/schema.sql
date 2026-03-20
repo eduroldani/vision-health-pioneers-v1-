@@ -51,6 +51,49 @@ create table if not exists public.users (
   unique (profile_id)
 );
 
+create table if not exists public.cohorts (
+  id uuid primary key default gen_random_uuid(),
+  number integer,
+  name text not null,
+  program_name text,
+  description text,
+  start_date date,
+  end_date date,
+  status text not null default 'planned',
+  notes text,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  record_status text not null default 'active'
+);
+
+create table if not exists public.module_templates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text,
+  module_type text,
+  default_notes text,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  record_status text not null default 'active'
+);
+
+create table if not exists public.cohort_modules (
+  id uuid primary key default gen_random_uuid(),
+  cohort_id uuid not null references public.cohorts (id) on delete cascade,
+  module_template_id uuid not null references public.module_templates (id) on delete restrict,
+  status text not null default 'planned',
+  sequence_number integer,
+  start_date date,
+  end_date date,
+  notes text,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  record_status text not null default 'active'
+);
+
 create table if not exists public.profile_roles (
   id uuid primary key default gen_random_uuid(),
   role_id uuid not null references public.roles (id) on delete cascade,
@@ -112,6 +155,50 @@ alter table if exists public.profiles
   add constraint profiles_gender_check
   check (gender is null or gender in ('male', 'female', 'diverse'));
 
+alter table if exists public.cohorts add column if not exists program_name text;
+alter table if exists public.cohorts add column if not exists number integer;
+alter table if exists public.cohorts add column if not exists description text;
+alter table if exists public.cohorts add column if not exists start_date date;
+alter table if exists public.cohorts add column if not exists end_date date;
+alter table if exists public.cohorts add column if not exists status text default 'planned';
+alter table if exists public.cohorts add column if not exists notes text;
+alter table if exists public.cohorts add column if not exists created_by uuid references auth.users (id) on delete set null;
+alter table if exists public.cohorts add column if not exists updated_at timestamptz default timezone('utc', now());
+alter table if exists public.cohorts add column if not exists record_status text default 'active';
+alter table if exists public.cohorts alter column status set not null;
+alter table if exists public.cohorts alter column record_status set not null;
+
+alter table if exists public.module_templates add column if not exists description text;
+alter table if exists public.module_templates add column if not exists module_type text;
+alter table if exists public.module_templates add column if not exists default_notes text;
+alter table if exists public.module_templates add column if not exists created_by uuid references auth.users (id) on delete set null;
+alter table if exists public.module_templates add column if not exists updated_at timestamptz default timezone('utc', now());
+alter table if exists public.module_templates add column if not exists record_status text default 'active';
+alter table if exists public.module_templates alter column record_status set not null;
+
+alter table if exists public.cohort_modules add column if not exists status text default 'planned';
+alter table if exists public.cohort_modules add column if not exists sequence_number integer;
+alter table if exists public.cohort_modules add column if not exists start_date date;
+alter table if exists public.cohort_modules add column if not exists end_date date;
+alter table if exists public.cohort_modules add column if not exists notes text;
+alter table if exists public.cohort_modules add column if not exists created_by uuid references auth.users (id) on delete set null;
+alter table if exists public.cohort_modules add column if not exists updated_at timestamptz default timezone('utc', now());
+alter table if exists public.cohort_modules add column if not exists record_status text default 'active';
+alter table if exists public.cohort_modules alter column status set not null;
+alter table if exists public.cohort_modules alter column record_status set not null;
+
+create index if not exists cohorts_status_idx on public.cohorts (status);
+create index if not exists cohorts_number_idx on public.cohorts (number);
+create index if not exists cohorts_record_status_idx on public.cohorts (record_status);
+create index if not exists module_templates_type_idx on public.module_templates (module_type);
+create index if not exists module_templates_record_status_idx on public.module_templates (record_status);
+create index if not exists cohort_modules_cohort_id_idx on public.cohort_modules (cohort_id);
+create index if not exists cohort_modules_module_template_id_idx on public.cohort_modules (module_template_id);
+create index if not exists cohort_modules_status_idx on public.cohort_modules (status);
+create index if not exists cohort_modules_record_status_idx on public.cohort_modules (record_status);
+create unique index if not exists cohort_modules_unique_active_idx
+on public.cohort_modules (cohort_id, module_template_id, record_status);
+
 alter table if exists public.startup_people rename to startup_members;
 
 create table if not exists public.startup_members (
@@ -169,6 +256,9 @@ alter table public.startups enable row level security;
 alter table public.profiles enable row level security;
 alter table public.roles enable row level security;
 alter table public.users enable row level security;
+alter table public.cohorts enable row level security;
+alter table public.module_templates enable row level security;
+alter table public.cohort_modules enable row level security;
 alter table public.profile_roles enable row level security;
 alter table public.startup_members enable row level security;
 alter table public.assignments enable row level security;
@@ -210,6 +300,7 @@ to authenticated
 using (true);
 
 drop policy if exists "Authenticated users can insert profiles" on public.profiles;
+drop policy if exists "Admins can insert profiles" on public.profiles;
 create policy "Admins can insert profiles"
 on public.profiles
 for insert
@@ -224,6 +315,7 @@ with check (
 );
 
 drop policy if exists "Authenticated users can update profiles" on public.profiles;
+drop policy if exists "Admins or linked users can update profiles" on public.profiles;
 create policy "Admins or linked users can update profiles"
 on public.profiles
 for update
@@ -246,6 +338,7 @@ with check (
 );
 
 drop policy if exists "Authenticated users can delete profiles" on public.profiles;
+drop policy if exists "Admins can delete profiles" on public.profiles;
 create policy "Admins can delete profiles"
 on public.profiles
 for delete
@@ -263,6 +356,93 @@ drop policy if exists "Authenticated users can read roles" on public.roles;
 create policy "Authenticated users can read roles"
 on public.roles
 for select
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can read cohorts" on public.cohorts;
+create policy "Authenticated users can read cohorts"
+on public.cohorts
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can insert cohorts" on public.cohorts;
+create policy "Authenticated users can insert cohorts"
+on public.cohorts
+for insert
+to authenticated
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can update cohorts" on public.cohorts;
+create policy "Authenticated users can update cohorts"
+on public.cohorts
+for update
+to authenticated
+using (true)
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can delete cohorts" on public.cohorts;
+create policy "Authenticated users can delete cohorts"
+on public.cohorts
+for delete
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can read module templates" on public.module_templates;
+create policy "Authenticated users can read module templates"
+on public.module_templates
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can insert module templates" on public.module_templates;
+create policy "Authenticated users can insert module templates"
+on public.module_templates
+for insert
+to authenticated
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can update module templates" on public.module_templates;
+create policy "Authenticated users can update module templates"
+on public.module_templates
+for update
+to authenticated
+using (true)
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can delete module templates" on public.module_templates;
+create policy "Authenticated users can delete module templates"
+on public.module_templates
+for delete
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can read cohort modules" on public.cohort_modules;
+create policy "Authenticated users can read cohort modules"
+on public.cohort_modules
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Authenticated users can insert cohort modules" on public.cohort_modules;
+create policy "Authenticated users can insert cohort modules"
+on public.cohort_modules
+for insert
+to authenticated
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can update cohort modules" on public.cohort_modules;
+create policy "Authenticated users can update cohort modules"
+on public.cohort_modules
+for update
+to authenticated
+using (true)
+with check (auth.uid() is not null);
+
+drop policy if exists "Authenticated users can delete cohort modules" on public.cohort_modules;
+create policy "Authenticated users can delete cohort modules"
+on public.cohort_modules
+for delete
 to authenticated
 using (true);
 

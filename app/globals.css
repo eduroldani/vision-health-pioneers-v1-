@@ -54,9 +54,11 @@ a {
 }
 
 .landing-shell {
-  width: min(100%, 960px);
-  display: grid;
-  gap: 20px;
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .landing-navbar {
@@ -77,6 +79,7 @@ a {
 
 .hero-card {
   width: min(100%, 760px);
+  margin: 0 auto;
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: 24px;
@@ -119,7 +122,7 @@ a {
 
 .topbar-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
   align-items: start;
   gap: 24px;
   padding: 28px 32px;
@@ -137,35 +140,41 @@ a {
   font-size: clamp(2rem, 4vw, 3.25rem);
   line-height: 1.05;
   letter-spacing: -0.04em;
+  max-width: 520px;
 }
 
 .topbar-copy p {
   margin: 16px 0 0;
-  max-width: 560px;
+  max-width: 520px;
   color: var(--text-secondary);
   font-size: 1rem;
   line-height: 1.6;
 }
 
 .topbar-actions {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   gap: 14px;
-  align-items: center;
+  align-items: start;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .topbar-controls {
   display: grid;
   gap: 14px;
+  width: 100%;
+  justify-self: end;
   justify-items: stretch;
   align-content: start;
 }
 
 .topbar-search-form {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: start;
+  gap: 16px;
   width: 100%;
 }
 
@@ -299,6 +308,20 @@ a {
   gap: 2px;
 }
 
+.table-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-link-button:hover {
+  color: #3342b0;
+}
+
 .table-action-button {
   white-space: nowrap;
 }
@@ -310,14 +333,25 @@ a {
 }
 
 .workspace-grid-overview {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .summary-card {
-  min-height: 148px;
+  min-height: 172px;
   display: grid;
-  gap: 10px;
-  align-content: start;
+  gap: 12px;
+  align-content: center;
+  justify-items: center;
+  padding: 30px;
+  text-align: center;
+}
+
+.summary-card-feature {
+  grid-column: span 2;
+  min-height: 172px;
+  background:
+    radial-gradient(circle at top right, rgba(83, 101, 255, 0.1), transparent 32%),
+    rgba(255, 255, 255, 0.94);
 }
 
 .summary-label {
@@ -340,14 +374,16 @@ a {
 
 .distribution-card {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 22px;
   align-items: center;
+  justify-content: center;
+  min-height: 100%;
 }
 
 .distribution-chart {
-  width: 120px;
-  height: 120px;
+  width: 132px;
+  height: 132px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -355,21 +391,22 @@ a {
 }
 
 .distribution-chart-center {
-  width: 62px;
-  height: 62px;
+  width: 66px;
+  height: 66px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   background: #ffffff;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1.08rem;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(58, 1, 116, 0.08);
 }
 
 .distribution-legend {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  justify-items: start;
 }
 
 .distribution-legend-item {
@@ -377,7 +414,7 @@ a {
   align-items: center;
   gap: 8px;
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
 
 .distribution-dot {
@@ -792,6 +829,115 @@ a {
   display: grid;
   gap: 16px;
   margin-top: 24px;
+}
+
+.program-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.program-dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.program-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.program-nav-item {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid rgba(58, 1, 116, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-primary);
+}
+
+.program-nav-item strong {
+  font-size: 0.98rem;
+}
+
+.program-nav-item span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.program-nav-item-active {
+  border-color: rgba(83, 101, 255, 0.28);
+  background: rgba(83, 101, 255, 0.08);
+}
+
+.program-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.program-two-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+  gap: 24px;
+}
+
+.program-board-bottom {
+  align-items: start;
+}
+
+.program-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.program-hub-card {
+  min-height: 220px;
+}
+
+.program-hub-actions {
+  margin-top: auto;
+}
+
+.program-item-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid rgba(58, 1, 116, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.program-item-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.program-item-topline strong {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.program-item-notes {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.program-group-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid rgba(58, 1, 116, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .workspace-toolbar {
@@ -1559,8 +1705,16 @@ a {
   .page-heading,
   .form-actions,
   .admin-actions {
-    flex-direction: column;
     min-width: 0;
+  }
+
+  .topbar-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+
+  .topbar-search-form {
+    grid-template-columns: 1fr;
   }
 
   .workspace-toolbar {
@@ -1570,6 +1724,12 @@ a {
   .form-two-columns,
   .workspace-grid,
   .workspace-grid-overview,
+  .program-dashboard-grid,
+  .program-hub-grid,
+  .program-summary-grid,
+  .program-nav,
+  .program-board,
+  .program-two-panel,
   .detail-grid {
     grid-template-columns: 1fr;
   }
