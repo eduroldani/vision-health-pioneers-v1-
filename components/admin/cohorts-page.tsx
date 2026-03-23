@@ -58,7 +58,7 @@ export function CohortsPage() {
         <div className="card-heading page-heading">
           <div>
             <h2>Cohorts</h2>
-            <p>Manage cohort numbers, names, dates, and program cycle status.</p>
+            <p>Manage cohort numbers, timing, and the workshop, 1:1, and other budgets in both hours and money.</p>
           </div>
           <button type="button" className="login-button admin-button" onClick={() => setIsCreateModalOpen(true)}>
             Add cohort
@@ -86,6 +86,9 @@ export function CohortsPage() {
                   <th>Number</th>
                   <th>Name</th>
                   <th>Status</th>
+                  <th>Workshop budget</th>
+                  <th>1:1 budget</th>
+                  <th>Other budget</th>
                   <th>Start date</th>
                   <th>End date</th>
                 </tr>
@@ -116,6 +119,9 @@ export function CohortsPage() {
                         {formatStatusLabel(cohort.status)}
                       </span>
                     </td>
+                    <td>{formatBudgetPair(cohort.workshop_budget_hours, cohort.workshop_budget_amount)}</td>
+                    <td>{formatBudgetPair(cohort.one_to_one_budget_hours, cohort.one_to_one_budget_amount)}</td>
+                    <td>{formatBudgetPair(cohort.other_budget_hours, cohort.other_budget_amount)}</td>
                     <td>{cohort.start_date ?? "—"}</td>
                     <td>{cohort.end_date ?? "—"}</td>
                   </tr>
@@ -180,8 +186,20 @@ export function CohortsPage() {
                 <span>{selectedCohort.start_date ?? "—"}</span>
               </div>
               <div className="detail-item">
+                <strong>Workshop budget</strong>
+                <span>{formatBudgetPair(selectedCohort.workshop_budget_hours, selectedCohort.workshop_budget_amount)}</span>
+              </div>
+              <div className="detail-item">
                 <strong>End date</strong>
                 <span>{selectedCohort.end_date ?? "—"}</span>
+              </div>
+              <div className="detail-item">
+                <strong>1:1 budget</strong>
+                <span>{formatBudgetPair(selectedCohort.one_to_one_budget_hours, selectedCohort.one_to_one_budget_amount)}</span>
+              </div>
+              <div className="detail-item">
+                <strong>Other budget</strong>
+                <span>{formatBudgetPair(selectedCohort.other_budget_hours, selectedCohort.other_budget_amount)}</span>
               </div>
             </div>
 
@@ -216,4 +234,10 @@ function formatStatusLabel(value: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatBudgetPair(hours: number | null, amount: number | null) {
+  const hoursLabel = hours !== null ? `${hours}h` : "—h";
+  const amountLabel = amount !== null ? `EUR ${amount}` : "EUR —";
+  return `${hoursLabel} · ${amountLabel}`;
 }

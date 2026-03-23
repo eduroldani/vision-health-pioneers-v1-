@@ -93,6 +93,78 @@ export function CohortForm({
               onChange={(event) => onChange({ ...values, end_date: event.target.value })}
             />
           </label>
+
+          <label className="field">
+            <span>Workshop hours budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={values.workshop_budget_hours}
+              onChange={(event) => onChange({ ...values, workshop_budget_hours: event.target.value })}
+              placeholder="40"
+            />
+          </label>
+
+          <label className="field">
+            <span>Workshop money budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.workshop_budget_amount}
+              onChange={(event) => onChange({ ...values, workshop_budget_amount: event.target.value })}
+              placeholder="5000"
+            />
+          </label>
+
+          <label className="field">
+            <span>1:1 hours budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={values.one_to_one_budget_hours}
+              onChange={(event) => onChange({ ...values, one_to_one_budget_hours: event.target.value })}
+              placeholder="60"
+            />
+          </label>
+
+          <label className="field">
+            <span>1:1 money budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.one_to_one_budget_amount}
+              onChange={(event) => onChange({ ...values, one_to_one_budget_amount: event.target.value })}
+              placeholder="7500"
+            />
+          </label>
+
+          <label className="field">
+            <span>Other hours budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={values.other_budget_hours}
+              onChange={(event) => onChange({ ...values, other_budget_hours: event.target.value })}
+              placeholder="20"
+            />
+          </label>
+
+          <label className="field">
+            <span>Other money budget</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.other_budget_amount}
+              onChange={(event) => onChange({ ...values, other_budget_amount: event.target.value })}
+              placeholder="2500"
+            />
+          </label>
         </div>
 
         <label className="field">

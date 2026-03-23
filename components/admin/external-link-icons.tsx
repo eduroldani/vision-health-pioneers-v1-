@@ -39,7 +39,16 @@ export function ExternalLinkIcons({
   websiteUrl,
 }: ExternalLinkIconsProps) {
   if (!notionUrl && !instagramUrl && !linkedinUrl && !websiteUrl) {
-    return <span className="role-placeholder">No links</span>;
+    return (
+      <span className="icon-link icon-link-muted" aria-label="No links attached" title="No links attached">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M8.6 15.4a3 3 0 0 1 0-4.2l2.1-2.1 1.3 1.3-2.1 2.1a1.2 1.2 0 1 0 1.7 1.7l2.1-2.1 1.3 1.3-2.1 2.1a3 3 0 0 1-4.3-.1Zm6.8-6.8a3 3 0 0 1 0 4.2l-2.1 2.1-1.3-1.3 2.1-2.1a1.2 1.2 0 1 0-1.7-1.7l-2.1 2.1-1.3-1.3 2.1-2.1a3 3 0 0 1 4.3.1ZM5.7 4.3l14 14-1.4 1.4-14-14 1.4-1.4Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+    );
   }
 
   return (

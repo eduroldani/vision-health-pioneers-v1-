@@ -29,12 +29,16 @@ export function getCurrentDateTimeLocalValue() {
   return localDate.toISOString().slice(0, 16);
 }
 
+function getTodayDateTimeLocalValue() {
+  return getCurrentDateTimeLocalValue();
+}
+
 export const defaultAssignmentFormValues: AssignmentFormValues = {
   startup_id: "",
   profile_id: "",
   assignment_type: "evaluation",
   status: "assigned",
-  due_date: "",
+  due_date: getTodayDateTimeLocalValue(),
   submitted_at: getCurrentDateTimeLocalValue(),
   assigned_by_profile_id: "",
   notes: "",

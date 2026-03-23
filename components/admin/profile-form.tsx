@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { agreementStatusOptions, profileStatusOptions } from "@/components/admin/types";
+import type { RoleRecord } from "@/components/admin/types";
 import {
   defaultProfileFormValues,
   type ProfileFormValues,
@@ -13,6 +15,8 @@ type ProfileFormProps = {
   submittingLabel: string;
   title: string;
   description: string;
+  availableRoles?: RoleRecord[];
+  showExtendedDetails?: boolean;
 };
 
 export function ProfileForm({
@@ -22,10 +26,16 @@ export function ProfileForm({
   submittingLabel,
   title,
   description,
+  availableRoles = [],
+  showExtendedDetails = true,
 }: ProfileFormProps) {
   const [values, setValues] = useState<ProfileFormValues>(initialValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const generatedInternalCode = useMemo(
+    () => buildInternalCode(values.first_name, values.last_name),
+    [values.first_name, values.last_name],
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -147,6 +157,148 @@ export function ProfileForm({
           />
         </label>
 
+        {availableRoles.length > 0 ? (
+          <div className="detail-panel">
+            <strong>Profile roles</strong>
+            <p>Select what kind of person this is while creating the profile.</p>
+            <div className="checkbox-stack">
+              {availableRoles.map((role) => (
+                <label key={role.id} className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={values.role_ids.includes(role.id)}
+                    onChange={(event) =>
+                      setValues((current) => ({
+                        ...current,
+                        role_ids: event.target.checked
+                          ? [...current.role_ids, role.id]
+                          : current.role_ids.filter((currentRoleId) => currentRoleId !== role.id),
+                      }))
+                    }
+                  />
+                  <div className="checkbox-copy">
+                    <strong>{formatStatusLabel(role.name)}</strong>
+                    <span>{role.description ?? "No description"}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {showExtendedDetails ? (
+          <div className="detail-panel profile-extended-panel">
+            <strong>Extended details</strong>
+            <p>Fill these for coaches, mentors, team members, or any profile that needs operational onboarding.</p>
+
+            <div className="form-two-columns">
+              <label className="field">
+                <span>Profile status</span>
+                <select
+                  value={values.profile_status}
+                  onChange={(event) =>
+                    setValues((current) => ({ ...current, profile_status: event.target.value }))
+                  }
+                >
+                  <option value="">Select status</option>
+                  {profileStatusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {formatStatusLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Internal code</span>
+                <input
+                  type="text"
+                  value={generatedInternalCode}
+                  onChange={() => undefined}
+                  placeholder="VHP-NIKLAS-LAASCH"
+                  readOnly
+                />
+              </label>
+
+              <label className="field">
+                <span>Agreement status</span>
+                <select
+                  value={values.agreement_status}
+                  onChange={(event) =>
+                    setValues((current) => ({ ...current, agreement_status: event.target.value }))
+                  }
+                >
+                  <option value="">Select agreement status</option>
+                  {agreementStatusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {formatStatusLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Agreement end date</span>
+                <input
+                  type="date"
+                  value={values.agreement_end_date}
+                  onChange={(event) =>
+                    setValues((current) => ({ ...current, agreement_end_date: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>Website status</span>
+                <input
+                  type="text"
+                  value={values.website_status}
+                  onChange={(event) =>
+                    setValues((current) => ({ ...current, website_status: event.target.value }))
+                  }
+                  placeholder="Mentors & Coaches"
+                />
+              </label>
+
+              <label className="field">
+                <span>Publication status</span>
+                <input
+                  type="text"
+                  value={values.publication_status}
+                  onChange={(event) =>
+                    setValues((current) => ({ ...current, publication_status: event.target.value }))
+                  }
+                  placeholder="Published, Draft, Internal only"
+                />
+              </label>
+            </div>
+
+            <label className="field">
+              <span>Drive URL</span>
+              <input
+                type="url"
+                value={values.drive_url}
+                onChange={(event) =>
+                  setValues((current) => ({ ...current, drive_url: event.target.value }))
+                }
+                placeholder="https://drive.google.com/..."
+              />
+            </label>
+
+            <label className="field">
+              <span>Admin notes</span>
+              <textarea
+                rows={4}
+                value={values.admin_notes}
+                onChange={(event) =>
+                  setValues((current) => ({ ...current, admin_notes: event.target.value }))
+                }
+                placeholder="Agreement context, sourcing notes, onboarding details, or internal follow-up."
+              />
+            </label>
+          </div>
+        ) : null}
+
         <button type="submit" className="login-button auth-submit" disabled={isSubmitting}>
           {isSubmitting ? submittingLabel : submitLabel}
         </button>
@@ -155,4 +307,30 @@ export function ProfileForm({
       {errorMessage ? <p className="form-message form-message-error">{errorMessage}</p> : null}
     </section>
   );
+}
+
+function formatStatusLabel(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function buildInternalCode(firstName: string, lastName: string) {
+  const normalize = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toUpperCase();
+
+  const normalizedFirstName = normalize(firstName);
+  const normalizedLastName = normalize(lastName);
+
+  if (!normalizedFirstName || !normalizedLastName) {
+    return "";
+  }
+
+  return `VHP-${normalizedFirstName}-${normalizedLastName}`;
 }

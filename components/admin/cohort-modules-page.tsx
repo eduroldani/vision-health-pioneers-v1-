@@ -8,6 +8,7 @@ import type {
   CohortModuleWithRelationsRecord,
   CohortRecord,
   ModuleTemplateRecord,
+  ParentCoachingWithRelationsRecord,
 } from "@/components/admin/types";
 import {
   createCohortModule,
@@ -19,6 +20,7 @@ export function CohortModulesPage() {
   const [cohorts, setCohorts] = useState<CohortRecord[]>([]);
   const [moduleTemplates, setModuleTemplates] = useState<ModuleTemplateRecord[]>([]);
   const [cohortModules, setCohortModules] = useState<CohortModuleWithRelationsRecord[]>([]);
+  const [parentCoachings, setParentCoachings] = useState<ParentCoachingWithRelationsRecord[]>([]);
   const [values, setValues] = useState(defaultCohortModuleFormValues);
   const [selectedRecord, setSelectedRecord] = useState<CohortModuleWithRelationsRecord | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -37,6 +39,7 @@ export function CohortModulesPage() {
       setCohorts(data.cohorts);
       setModuleTemplates(data.moduleTemplates);
       setCohortModules(data.cohortModules);
+      setParentCoachings(data.parentCoachings);
 
       const defaultCohortId = data.cohorts[0]?.id ?? "";
       const defaultModuleTemplateId = data.moduleTemplates[0]?.id ?? "";
@@ -82,6 +85,21 @@ export function CohortModulesPage() {
 
     return cohortModules.filter((record) => record.cohort_id === selectedCohortId);
   }, [cohortModules, selectedCohortId]);
+
+  const parentCoachingsByCohortModuleId = useMemo(() => {
+    return parentCoachings.reduce<Record<string, ParentCoachingWithRelationsRecord[]>>((groups, coaching) => {
+      if (!coaching.cohort_module_id) {
+        return groups;
+      }
+
+      if (!groups[coaching.cohort_module_id]) {
+        groups[coaching.cohort_module_id] = [];
+      }
+
+      groups[coaching.cohort_module_id].push(coaching);
+      return groups;
+    }, {});
+  }, [parentCoachings]);
 
   return (
     <div className="page-stack">
@@ -129,6 +147,7 @@ export function CohortModulesPage() {
                 <tr>
                   <th>Cohort</th>
                   <th>Module</th>
+                  <th>Cohort coachings</th>
                   <th>Status</th>
                   <th>Sequence</th>
                   <th>Dates</th>
@@ -154,6 +173,9 @@ export function CohortModulesPage() {
                       >
                         {record.module_template?.name ?? "—"}
                       </button>
+                    </td>
+                    <td>
+                      {parentCoachingsByCohortModuleId[record.id]?.length ?? 0}
                     </td>
                     <td>
                       <span className={`status-badge status-badge-${record.status.replaceAll("_", "-")}`}>
@@ -226,9 +248,28 @@ export function CohortModulesPage() {
                 <span>{selectedRecord.start_date ?? "—"}</span>
               </div>
               <div className="detail-item">
+                <strong>Cohort coachings</strong>
+                <span>{parentCoachingsByCohortModuleId[selectedRecord.id]?.length ?? 0}</span>
+              </div>
+              <div className="detail-item">
                 <strong>End date</strong>
                 <span>{selectedRecord.end_date ?? "—"}</span>
               </div>
+            </div>
+
+            <div className="record-subsection">
+              <strong>Cohort coachings inside this module</strong>
+              {parentCoachingsByCohortModuleId[selectedRecord.id]?.length ? (
+                <div className="pill-row">
+                  {parentCoachingsByCohortModuleId[selectedRecord.id].map((coaching) => (
+                    <span key={coaching.id} className="status-badge status-badge-in-progress">
+                      {coaching.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="role-placeholder">No cohort coachings linked yet.</span>
+              )}
             </div>
 
             {selectedRecord.notes ? (

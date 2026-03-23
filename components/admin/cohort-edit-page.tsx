@@ -61,7 +61,7 @@ export function CohortEditPage({ cohortId }: CohortEditPageProps) {
       {errorMessage ? <p className="form-message form-message-error">{errorMessage}</p> : null}
       <CohortForm
         title="Edit cohort"
-        description="Update cohort number, dates, and status."
+        description="Update cohort number, timeline, and available coaching budget."
         values={values}
         onChange={setValues}
         onSubmit={handleSubmit}

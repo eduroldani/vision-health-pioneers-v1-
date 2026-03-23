@@ -113,20 +113,20 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
         <header className="topbar-shell">
           <div className="topbar-copy">
             <span className="eyebrow">Internal System</span>
-            <h1>Welcome {userEmail.split("@")[0] || "team"},</h1>
-            <p>Manage startups and profiles in a simple internal workspace.</p>
+            <h1>Welcome {formatWelcomeName(userEmail)} 👋</h1>
+            <p>Manage Vision Health Pioneers incubator in one place.</p>
           </div>
 
           <div className="topbar-controls">
             <div className="topbar-actions">
-              <Link href="/admin/program-management" className="secondary-button">
-                Program management
-              </Link>
               <Link href="/profile" className="secondary-button">
                 My profile
               </Link>
               <Link href="/admin" className="secondary-button">
                 Dashboard
+              </Link>
+              <Link href="/admin/program-management" className="secondary-button">
+                Program management
               </Link>
             </div>
 
@@ -134,7 +134,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
               <input
                 type="search"
                 className="topbar-search-input"
-                placeholder="Global search"
+                placeholder="Search startups, profiles, and more"
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
               />
@@ -198,4 +198,9 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
       </div>
     </main>
   );
+}
+
+function formatWelcomeName(email: string) {
+  const localPart = email.split("@")[0]?.trim() || "team";
+  return localPart.charAt(0).toUpperCase() + localPart.slice(1);
 }

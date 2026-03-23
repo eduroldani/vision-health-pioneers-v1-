@@ -47,7 +47,7 @@ export function MyProfilePage() {
           return;
         }
 
-        const { profile } = await fetchProfileById(appUser.profile_id);
+        const { profile, profileDetail, profileRoles } = await fetchProfileById(appUser.profile_id);
 
         if (!isMounted) {
           return;
@@ -62,6 +62,15 @@ export function MyProfilePage() {
           linkedin_url: profile.linkedin_url ?? "",
           website_url: profile.website_url ?? "",
           notes: profile.notes ?? "",
+          role_ids: profileRoles.map((profileRole) => profileRole.role_id),
+          profile_status: profileDetail?.profile_status ?? "",
+          internal_code: profileDetail?.internal_code ?? "",
+          drive_url: profileDetail?.drive_url ?? "",
+          agreement_status: profileDetail?.agreement_status ?? "",
+          agreement_end_date: profileDetail?.agreement_end_date ?? "",
+          website_status: profileDetail?.website_status ?? "",
+          publication_status: profileDetail?.publication_status ?? "",
+          admin_notes: profileDetail?.admin_notes ?? "",
         });
       } catch (error) {
         if (!isMounted) {

@@ -15,14 +15,14 @@ const items = [
     description: "Program cycles and cohort records",
   },
   {
-    href: "/admin/program-management/module-templates",
-    label: "Module templates",
-    description: "Reusable coaching and mentoring modules",
+    href: "/admin/program-management/parent-coachings",
+    label: "Coach sessions",
+    description: "Coach and mentor sessions with planning, budgets, readiness, and task checklists",
   },
   {
-    href: "/admin/program-management/cohort-modules",
-    label: "Cohort modules",
-    description: "Modules linked into specific cohorts",
+    href: "/admin/program-management/tags",
+    label: "Tags",
+    description: "Review and edit the labels used across coach sessions",
   },
 ];
 

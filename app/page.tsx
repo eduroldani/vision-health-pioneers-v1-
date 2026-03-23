@@ -8,7 +8,7 @@ export default function HomePage() {
           <span className="eyebrow">Vision Health Pioneers</span>
           <h1>VHPI Internal System</h1>
           <Link href="/admin" className="login-button">
-            Enter to dashboard
+            Enter
           </Link>
         </section>
       </div>
